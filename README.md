@@ -17,7 +17,7 @@ Workflow ini memvalidasi sintaks file `docker-compose.yml` (stack WordPress + Ma
 - `bukti/` : tangkapan layar bukti pengerjaan
 
 ## Cara kerja workflow
-Workflow dipicu oleh dua event, yaitu push ke branch `main` dan `pull_request`. Ia hanya punya satu job bernama `validate` yang berjalan di runner `ubuntu-latest`, yaitu mesin sementara milik GitHub yang dibuat baru setiap run. Job ini terdiri dari tiga step:
+Workflow dipicu oleh dua event, yaitu push ke branch `main` dan `pull_request`. Ia hanya punya satu job bernama `validate` yang berjalan di runner `ubuntu-latest`, yaitu mesin sementara milik GitHub yang dibuat baru setiap run. Job ini terdiri dari tiga step utama, ditambah tiga step bonus (lihat bagian Bonus di bawah):
 
 1. **Checkout** (`actions/checkout@v6`): mengambil kode repositori ke runner.
 2. **Siapkan .env dari contoh**: menjalankan `cp .env.example .env`. Langkah ini perlu karena file `.env` asli sengaja tidak ada di repo, dan tanpanya variabel seperti `${DB_NAME}` akan kosong.
@@ -47,3 +47,14 @@ Perintah `cp` dari folder Downloads gagal dengan pesan `No such file or director
 
 ## Refleksi singkat
 Dengan CI, kesalahan pada file Compose ketahuan beberapa menit setelah push, bukan setelah saya menjalankan stack-nya dan baru sadar ada yang rusak. Hasil hijau atau merah di Pull Request juga membuat saya yakin perubahan aman sebelum digabungkan ke `main`. Pengalaman ini menunjukkan bahwa validasi otomatis menghemat waktu dan mengurangi kesalahan karena lupa memeriksa secara manual.
+
+## Bonus: uji jalan stack di CI
+Selain validasi sintaks, workflow ditambah tiga step yang benar-benar menjalankan stack di runner:
+
+4. **Jalankan stack**: `docker compose up -d` menjalankan WordPress dan MariaDB di latar belakang.
+5. **Cek status container**: `docker compose ps` menampilkan status kedua container di log.
+6. **Matikan stack**: `docker compose down -v` mematikan dan menghapus container beserta volume. Step ini memakai `if: always()` sehingga tetap berjalan walaupun step sebelumnya gagal.
+
+Perubahan ini dikerjakan lewat branch `bonus-compose-up` dan Pull Request terpisah supaya `main` tetap aman: https://github.com/0701cimi-prog/compose-wordpress-ci/pull/2
+
+![Bonus hijau](bukti/4-bonus-hijau.png)
